@@ -1,0 +1,224 @@
+openapi: 3.0.3
+info:
+  title: TechnoMart AI Recommendations API
+  version: 1.0.0
+  description: API MVP-сервиса рекомендаций для получения готовой ленты SKU
+
+servers:
+  - url: https://recommendation-api.technomart.local
+
+paths:
+  /get_recommendation:
+    post:
+      summary: Получить рекомендации для пользователя, cookie или сессии
+      operationId: getRecommendation
+      tags:
+        - Recommendations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetRecommendationRequest'
+            examples:
+              byCookie:
+                summary: Запрос для анонимного пользователя
+                value:
+                  profile_id: "cookie:9f3b8c12"
+                  profile_type: "cookie"
+                  surface: "homepage_feed"
+                  limit: 20
+                  context:
+                    page_type: "homepage"
+                    region_id: "msk"
+              byUser:
+                summary: Запрос для авторизованного пользователя
+                value:
+                  profile_id: "user:124578"
+                  profile_type: "user"
+                  surface: "homepage_feed"
+                  limit: 20
+                  context:
+                    page_type: "homepage"
+                    region_id: "spb"
+      responses:
+        '200':
+          description: Рекомендации успешно получены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetRecommendationResponse'
+              examples:
+                personalized:
+                  summary: Персональная выдача
+                  value:
+                    request_id: "req-7c9d2c10"
+                    source: "personalized"
+                    profile_id: "cookie:9f3b8c12"
+                    surface: "homepage_feed"
+                    generated_at: "2026-04-28T12:10:00Z"
+                    recommendations:
+                      - sku_id: "SKU-100245"
+                        score: 0.981
+                        rank: 1
+                        reason_code: "behavioral_similarity"
+                      - sku_id: "SKU-100731"
+                        score: 0.944
+                        rank: 2
+                        reason_code: "co_view"
+                fallback:
+                  summary: Fallback-выдача
+                  value:
+                    request_id: "req-11ac84bf"
+                    source: "fallback"
+                    profile_id: "cookie:new-user"
+                    surface: "homepage_feed"
+                    generated_at: "2026-04-28T12:11:00Z"
+                    recommendations:
+                      - sku_id: "SKU-200011"
+                        score: 0.750
+                        rank: 1
+                        reason_code: "popular"
+                      - sku_id: "SKU-200032"
+                        score: 0.731
+                        rank: 2
+                        reason_code: "popular"
+        '400':
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error_code: "INVALID_REQUEST"
+                message: "profile_id is required"
+        '404':
+          description: Не найдено ни персональных, ни fallback-рекомендаций
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error_code: "RECOMMENDATIONS_NOT_FOUND"
+                message: "No recommendations available for requested surface"
+        '429':
+          description: Слишком много запросов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error_code: "RATE_LIMITED"
+                message: "Too many requests"
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error_code: "INTERNAL_ERROR"
+                message: "Unexpected server error"
+
+components:
+  schemas:
+    GetRecommendationRequest:
+      type: object
+      required:
+        - profile_id
+        - profile_type
+        - surface
+      properties:
+        profile_id:
+          type: string
+          description: Идентификатор профиля, например user_id, cookie_id или session_id
+          example: "cookie:9f3b8c12"
+        profile_type:
+          type: string
+          enum: [user, cookie, session]
+          example: "cookie"
+        surface:
+          type: string
+          description: Точка показа рекомендаций
+          example: "homepage_feed"
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+          example: 20
+        context:
+          type: object
+          additionalProperties: true
+          description: Контекст страницы и запроса
+          example:
+            page_type: "homepage"
+            region_id: "msk"
+
+    GetRecommendationResponse:
+      type: object
+      required:
+        - request_id
+        - source
+        - profile_id
+        - surface
+        - generated_at
+        - recommendations
+      properties:
+        request_id:
+          type: string
+          example: "req-7c9d2c10"
+        source:
+          type: string
+          enum: [personalized, fallback]
+          example: "personalized"
+        profile_id:
+          type: string
+          example: "cookie:9f3b8c12"
+        surface:
+          type: string
+          example: "homepage_feed"
+        generated_at:
+          type: string
+          format: date-time
+          example: "2026-04-28T12:10:00Z"
+        recommendations:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/RecommendationItem'
+
+    RecommendationItem:
+      type: object
+      required:
+        - sku_id
+        - score
+        - rank
+      properties:
+        sku_id:
+          type: string
+          example: "SKU-100245"
+        score:
+          type: number
+          format: float
+          example: 0.981
+        rank:
+          type: integer
+          example: 1
+        reason_code:
+          type: string
+          description: Техническая причина попадания товара в выдачу
+          example: "behavioral_similarity"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+          example: "INVALID_REQUEST"
+        message:
+          type: string
+          example: "profile_id is required"

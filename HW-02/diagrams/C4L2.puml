@@ -1,0 +1,35 @@
+@startuml
+!include <C4/C4_Container>
+
+LAYOUT_LEFT_RIGHT()
+
+title TechnoMart — MVP AI Recommendations / C4 L2
+
+System_Ext(site, "Интернет-магазин", "Вызывает API рекомендаций и отправляет события поведения")
+System_Ext(oneC, "1C", "Источник заказов и чеков")
+System_Ext(ga, "Google Analytics", "Исторические просмотры и клики")
+System_Ext(catalog, "Каталог товаров", "SKU, категории, бренды, цены, атрибуты")
+
+System_Boundary(ai, "AI Recommendations System") {
+    Container(api, "Recommendation API", "HTTP Service", "Возвращает готовую ленту SKU для user/cookie/session")
+    Container(events, "Event Collector", "HTTP Service", "Принимает события поведения от сайта")
+    ContainerDb(behavior, "Behavior Store", "PostgreSQL / ClickHouse", "Сырые события, агрегаты и минимальный feature layer MVP")
+    Container(pipeline, "Behavioral Recommender Pipeline", "Batch Jobs / Python", "Строит behavioral-рекомендации и предрассчитывает выдачу")
+    ContainerDb(store, "Recommendation Store", "Redis / KV Store", "Хранит готовые рекомендации для быстрого online-ответа")
+}
+
+Rel(site, api, "POST /get_recommendation")
+Rel(api, store, "Читает готовую ленту")
+Rel(api, site, "Возвращает ranked SKU list")
+
+Rel(site, events, "Отправляет view/click/search/cart/purchase/impression")
+Rel(events, behavior, "Пишет события")
+
+Rel(ga, pipeline, "Историческое поведение")
+Rel(oneC, pipeline, "Заказы и чеки")
+Rel(catalog, pipeline, "Каталог и атрибуты товаров")
+
+Rel(pipeline, behavior, "Читает события, пишет агрегаты и признаки")
+Rel(pipeline, store, "Публикует готовые рекомендации")
+
+@enduml

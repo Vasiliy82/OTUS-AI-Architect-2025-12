@@ -1,0 +1,41 @@
+@startuml
+!include <C4/C4_Component>
+
+LAYOUT_LEFT_RIGHT()
+
+title TechnoMart — Behavioral Recommender Pipeline / C4 L3
+
+System_Ext(oneC, "1C", "Заказы и чеки")
+System_Ext(ga, "Google Analytics", "Исторические просмотры и клики")
+System_Ext(catalog, "Каталог товаров", "SKU и товарные атрибуты")
+
+ContainerDb(behavior, "Behavior Store", "PostgreSQL / ClickHouse", "Сырые события, агрегаты, feature layer MVP")
+ContainerDb(store, "Recommendation Store", "Redis / KV Store", "Готовые рекомендации")
+
+Container_Boundary(pipeline, "Behavioral Recommender Pipeline") {
+    Component(importer, "Data Importer", "Batch Component", "Импортирует данные из GA, 1C и каталога")
+    Component(featureBuilder, "Profile & Feature Builder", "Batch Component", "Строит агрегаты и поведенческие признаки")
+    Component(candidateGen, "Candidate Generator", "ML / Batch Component", "Формирует набор кандидатов по behavioral signals")
+    Component(ranker, "Behavioral Ranker", "ML / Batch Component", "Ранжирует кандидатов и рассчитывает score")
+    Component(publisher, "Recommendation Publisher", "Batch Component", "Публикует готовые ranked lists в serving store")
+}
+
+Rel(ga, importer, "Экспорт истории поведения")
+Rel(oneC, importer, "Импорт заказов и чеков")
+Rel(catalog, importer, "Импорт каталога")
+
+Rel(importer, behavior, "Пишет нормализованные данные")
+Rel(importer, featureBuilder, "Передает подготовленные данные")
+
+Rel(featureBuilder, behavior, "Пишет агрегаты и признаки")
+Rel(featureBuilder, candidateGen, "Передает профили и features")
+
+Rel(candidateGen, behavior, "Читает behavioral signals")
+Rel(candidateGen, ranker, "Передает набор кандидатов")
+
+Rel(ranker, behavior, "Читает признаки и историю")
+Rel(ranker, publisher, "Передает ranked SKU list")
+
+Rel(publisher, store, "Пишет готовые рекомендации")
+
+@enduml

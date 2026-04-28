@@ -1,0 +1,24 @@
+@startuml
+title TechnoMart — Sequence Diagram / get_recommendation
+
+actor Customer as customer
+participant "Интернет-магазин" as site
+participant "Recommendation API" as api
+database "Recommendation Store" as store
+
+customer -> site : Открывает страницу
+site -> api : POST /get_recommendation\n(profile_id, surface, context)
+
+api -> store : get(profile_id, surface)
+
+alt Рекомендации найдены
+    store --> api : ranked SKU list
+    api --> site : 200 OK\nrecommendations, source=personalized
+else Cache miss / профиль не найден
+    api -> store : get(fallback, surface)
+    store --> api : fallback SKU list
+    api --> site : 200 OK\nrecommendations, source=fallback
+end
+
+site --> customer : Отображает ленту товаров
+@enduml
