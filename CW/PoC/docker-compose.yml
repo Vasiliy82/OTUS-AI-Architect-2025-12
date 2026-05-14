@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: coursework-postgres
+    environment:
+      POSTGRES_DB: coursework
+      POSTGRES_USER: coursework
+      POSTGRES_PASSWORD: coursework
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
