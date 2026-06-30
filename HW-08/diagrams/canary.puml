@@ -1,0 +1,24 @@
+@startuml
+title TechnoMart — Canary release с rollback
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+start
+:Deploy новой версии
+(0% трафика);
+:Перевести 1% трафика;
+if (метрики в норме?) then (да)
+  :Перевести 5% трафика;
+  if (метрики в норме?) then (да)
+    :Перевести 100% трафика;
+    stop
+  else (нет)
+    :Rollback на стабильную версию;
+    stop
+  endif
+else (нет)
+  :Rollback на стабильную версию;
+  stop
+endif
+@enduml

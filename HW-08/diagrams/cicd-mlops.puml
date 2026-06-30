@@ -1,0 +1,25 @@
+@startuml
+title TechnoMart — CI/CD + MLOps пайплайн
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+start
+split
+  :Commit (Git);
+  :Build Docker image;
+  :Unit + Security tests;
+split again
+  :Датасет обновился
+  (новые события / каталог);
+  :Airflow trigger -> Retrain;
+  :Quality gate
+  (offline-метрики / Ragas);
+  :Model Registry (MLflow);
+end split
+:Deploy -> Staging;
+:E2E tests;
+:Deploy -> Prod (Canary);
+:Мониторинг (Observability);
+stop
+@enduml
