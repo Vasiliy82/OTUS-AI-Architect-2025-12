@@ -1,0 +1,18 @@
+@startuml
+title Делегирование задачи: Менеджер -> Поисковик -> Аналитик
+
+actor "Сотрудник" as user
+participant "Координатор\n(Менеджер)" as mgr
+participant "Поисковик билетов" as tickets
+participant "Аналитик бюджета/политики" as policy
+database "Vector DB\n(политика)" as vdb
+
+user -> mgr : Организуй командировку\nМосква -> Казань, 12-14 июля
+mgr -> tickets : найди билеты (даты, направление)
+tickets --> mgr : варианты билетов
+mgr -> policy : проверь по бюджету и политике
+policy -> vdb : retrieval релевантных правил
+vdb --> policy : фрагменты политики
+policy --> mgr : допустимый вариант + лимиты
+mgr --> user : итоговый план (билеты в рамках политики)
+@enduml

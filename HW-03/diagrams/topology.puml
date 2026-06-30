@@ -1,0 +1,20 @@
+@startuml
+title Умный помощник по командировкам — Multi-Agent топология (иерархия с координатором)
+
+actor "Сотрудник" as user
+
+rectangle "Агент-Координатор (Менеджер)\nплан, делегирование, сбор ответа\nпамять диалога" as mgr
+
+rectangle "Поисковик билетов\ntools: Avia/Rail API" as tickets
+rectangle "Аналитик бюджета и политики\ntools: RAG-запрос, калькулятор лимитов" as policy
+rectangle "Бронировщик отелей\ntools: Hotels API" as hotels
+
+database "Vector DB\nполитика командировок\n(база знаний, RAG)" as vdb
+
+user --> mgr : задача (командировка)
+mgr --> tickets : найти билеты
+mgr --> policy : проверить бюджет / политику
+mgr --> hotels : забронировать отель
+policy --> vdb : retrieval политики
+mgr --> user : итоговый план поездки
+@enduml
