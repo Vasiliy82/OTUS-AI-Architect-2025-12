@@ -1,0 +1,25 @@
+@startuml
+title TechnoMart — Security Layer вокруг LLM/RAG
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+actor "Пользователь" as user
+
+rectangle "API Gateway\nrate limiting, authN/Z,\nпервая линия защиты" as gw
+rectangle "PII Sanitizer\nмаскирование ПДн\nФИО/телефон/адрес -> плейсхолдеры" as pii
+rectangle "Input Guardrails\nанти Prompt Injection,\nфильтр запрещённых запросов" as ginp
+rectangle "RAG Retriever\n(Vector DB)" as rag
+rectangle "LLM\nself-hosted Llama 3" as llm
+rectangle "Output Guardrails\nвалидация по каталогу,\nанти-галлюцинации, PII-проверка" as gout
+rectangle "Восстановление персонализации\n(подстановка ПДн обратно)" as restore
+
+user --> gw
+gw --> pii
+pii --> ginp
+ginp --> rag
+rag --> llm
+llm --> gout
+gout --> restore
+restore --> user
+@enduml

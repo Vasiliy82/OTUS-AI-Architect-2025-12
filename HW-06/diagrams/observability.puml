@@ -1,0 +1,21 @@
+@startuml
+title TechnoMart — Observability стек для LLM/RAG
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+rectangle "LLM / RAG сервис\nинструментирование OpenTelemetry" as app
+
+rectangle "Prometheus\nметрики (Golden Signals)" as prom
+rectangle "Tempo\nраспределённый трейсинг" as tempo
+rectangle "Langfuse\nLLM-трейсы: токены, стоимость,\nкачество ответа" as lf
+
+rectangle "Grafana\nдашборды + алерты (SLO)" as graf
+
+app --> prom : метрики
+app --> tempo : traces
+app --> lf : LLM-трейсы / cost
+prom --> graf
+tempo --> graf
+lf --> graf
+@enduml
