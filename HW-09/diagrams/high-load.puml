@@ -1,0 +1,27 @@
+@startuml
+title TechnoMart — High-Load архитектура (10000 RPS, < 200 мс)
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+actor "Пользователи\n~10000 RPS" as users
+
+rectangle "Geo-DNS / CDN / Edge\nстатика, гео-маршрутизация" as cdn
+rectangle "API Gateway\nrate limiting, authN/Z" as gw
+database "Semantic Cache\nRedis + эмбеддинги запросов" as cache
+database "Recommendation Store\nRedis (готовая выдача)" as rec
+queue "Очередь тяжёлых запросов\n(async, queue-based)" as q
+rectangle "Async Worker\nтяжёлая LLM-генерация" as worker
+rectangle "Inference-поды (LLM)\nKEDA autoscaling по длине очереди" as inf
+
+users --> cdn
+cdn --> gw
+gw --> cache : 1) поиск по смыслу
+cache --> gw : hit -> мгновенный ответ
+gw --> rec : 2) miss, лёгкий путь:\nготовая выдача (< 200 мс)
+gw --> q : 3) miss, тяжёлый путь:\nпостановка в очередь
+q --> worker
+worker --> inf
+inf --> cache : запись результата
+worker --> gw : async-ответ / callback
+@enduml
