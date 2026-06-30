@@ -1,0 +1,25 @@
+@startuml
+title TechnoMart — Feature Store: единый источник признаков (анти-skew)
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+rectangle "Определения признаков\nединый код трансформаций\n(feature definitions)" as defs
+
+database "Offline Store\nисторические признаки\n(для обучения)" as off
+database "Online Store\nсвежие признаки\n(low-latency, для инференса)" as on
+
+rectangle "Обучение модели\n(training)" as train
+rectangle "Инференс / serving\n(recommendation pipeline)" as serve
+
+defs --> off : материализация (batch)
+defs --> on : материализация (stream + batch)
+off --> train : point-in-time выборка
+on --> serve : те же признаки, что в обучении
+train ..> serve : согласованная модель
+
+note bottom of defs
+  Одни и те же определения и код трансформаций
+  для offline и online => нет Training-Serving Skew
+end note
+@enduml

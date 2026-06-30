@@ -1,0 +1,36 @@
+@startuml
+title TechnoMart — Data Pipeline (Lambda-архитектура)
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+rectangle "Сайт\nсобытия view/click/cart/purchase" as site
+rectangle "1C / ERP\nкаталог, заказы, чеки" as erp
+rectangle "Google Analytics\nисторическое поведение" as ga
+
+queue "Kafka\nevent stream" as kafka
+
+rectangle "Speed Layer\nSpark Structured Streaming\n(онлайн-агрегаты)" as speed
+rectangle "Batch Layer\nSpark: очистка, дедуп, агрегаты" as batch
+rectangle "Embedding Job\nгенерация эмбеддингов SKU" as emb
+
+database "Data Lake (S3 / MinIO)\nbronze / silver / gold" as lake
+database "Feature Store\noffline + online" as fs
+database "Vector DB (Qdrant)\nэмбеддинги SKU" as vdb
+database "Recommendation Store\nRedis (online serving)" as rec
+
+site --> kafka : стрим
+kafka --> speed
+erp --> batch : батч (выгрузка)
+ga --> batch : батч (история)
+
+speed --> lake : near-real-time
+batch --> lake : нормализованные данные
+lake --> emb
+emb --> vdb
+
+batch --> fs : offline-признаки
+speed --> fs : online-признаки
+fs --> rec : предрасчёт выдачи
+vdb --> rec : ANN-поиск похожих SKU
+@enduml
